@@ -39,20 +39,27 @@ def scaling(x, sigma=1.1):
 
 def permutation(x, max_segments=5, seg_mode="random"):
     orig_steps = np.arange(x.shape[2])
-
     num_segs = np.random.randint(1, max_segments, size=(x.shape[0]))
 
     ret = np.zeros_like(x)
     for i, pat in enumerate(x):
         if num_segs[i] > 1:
             if seg_mode == "random":
-                split_points = np.random.choice(x.shape[2] - 2, num_segs[i] - 1, replace=False)
-                split_points.sort()
-                splits = np.split(orig_steps, split_points)
+                # 更安全的切分点选择（避免边界）
+                candidates = np.arange(1, x.shape[2] - 1)
+                if len(candidates) >= num_segs[i] - 1:
+                    split_points = np.random.choice(candidates, size=num_segs[i] - 1, replace=False)
+                    split_points.sort()
+                    splits = np.split(orig_steps, split_points)
+                else:
+                    splits = [orig_steps]  # fallback
             else:
                 splits = np.array_split(orig_steps, num_segs[i])
-            warp = np.concatenate(np.random.permutation(splits)).ravel()
-            ret[i] = pat[0,warp]
+
+            # ✅ 核心修复：用 shuffle 替代 permutation
+            np.random.shuffle(splits)
+            warp = np.concatenate(splits)
+            ret[i] = pat[:, warp]  # ✅ 修复维度
         else:
             ret[i] = pat
     return torch.from_numpy(ret)

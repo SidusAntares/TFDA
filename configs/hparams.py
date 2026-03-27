@@ -67,4 +67,23 @@ class HAR():
             'SFTSDA': {'pre_learning_rate': 0.001, 'learning_rate': 0.0001, 'ent_loss_wt': 0.05897, 'im': 0.2759,  'TOV_wt': 0.5},
         }
 
+class TM():
+    def __init__(self):
+        super(TM, self).__init__()
+        self.train_params = {
+            'num_epochs': 50,
+            'batch_size': 500,
+            'weight_decay': 1e-4,
+            'step_size': 50,
+            'lr_decay': 0.5
+        }
+        self.alg_hparams = {
+            'SHOT': {'pre_learning_rate': 0.001, 'learning_rate': 0.0001, 'ent_loss_wt': 0.6709, 'im': 0.8969,
+                     'target_cls_wt': 0.3312},
+            'AaD': {'pre_learning_rate': 0.003, 'learning_rate': 0.0001, 'beta': 10, 'alpha': 1},
+
+            'NRC': {'pre_learning_rate': 0.003, 'learning_rate': 0.00001, 'epsilon': 1e-5},
+            'MAPU': {'pre_learning_rate': 0.001, 'learning_rate': 0.0001, 'ent_loss_wt': 0.05897, 'im': 0.2759,  'TOV_wt': 0.5},
+            'SFTSDA': {'pre_learning_rate': 0.001, 'learning_rate': 0.001, 'ent_loss_wt': 0.05897, 'im': 0.2759,  'TOV_wt': 0.5},
+        }
 

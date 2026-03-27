@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from models.models import classifier, Temporal_Imputer, masking, get_distances, soft_k_nearest_neighbors, refine_predictions, eval_and_label_dataset, update_labels, tf_encoder
-from models.loss import EntropyLoss, CrossEntropyLabelSmooth, evidential_uncertainty, evident_dl, contrastive_loss, TEntropyLoss, NTXentLoss_poly
+from models.loss import EntropyLoss, CrossEntropyLabelSmooth, evidential_uncertainty, evident_dl, contrastive_loss, TEntropyLoss
 from scipy.spatial.distance import cdist
 from torch.optim.lr_scheduler import StepLR
 from copy import deepcopy

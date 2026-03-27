@@ -124,18 +124,19 @@ class tf_encoder(nn.Module):
         self.cnn = CNN(configs).to('cuda')  # Time Feature Encoder
         self.cnn_f = CNN(configs).to('cuda')  # Frequency Feature Extractor
 
+        feat_dim = configs.final_out_channels * configs.features_len
         self.projector = nn.Sequential(
-            nn.Linear(configs.TSlength_aligned, 256),
+            nn.Linear(feat_dim, 256),
             nn.BatchNorm1d(256),
             nn.ReLU(),
-            nn.Linear(256, configs.TSlength_aligned)
+            nn.Linear(256, feat_dim)
         )
 
         self.projector_f = nn.Sequential(
-            nn.Linear(configs.TSlength_aligned, 256),
+            nn.Linear(feat_dim, 256),
             nn.BatchNorm1d(256),
             nn.ReLU(),
-            nn.Linear(256, configs.TSlength_aligned)
+            nn.Linear(256, feat_dim)
         )
 
 
