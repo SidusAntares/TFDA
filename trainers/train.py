@@ -10,7 +10,7 @@ import argparse
 import warnings
 import sklearn.exceptions
 
-from utils import fix_randomness, starting_logs, AverageMeter, plot_tsne
+from utils import fix_randomness, starting_logs, AverageMeter # plot_tsne
 from abstract_trainer import AbstractTrainer
 
 warnings.filterwarnings("ignore", category=sklearn.exceptions.UndefinedMetricWarning)
@@ -107,6 +107,27 @@ if __name__ == "__main__":
     parser.add_argument('--num_neighbors', default=10, type=int)
     parser.add_argument('--temporal_length', default=5, type=int)
     parser.add_argument('--plot_tsne', default=True, type=bool, help='Plot t-sne for training and testing or not?')
+
+    # timematch
+    parser.add_argument('--epochs', type=int, default=50, help='Number of training epochs')
+    parser.add_argument('--device', default='cuda:0', type=str, help='Device to use (e.g., cuda:0, cpu). Auto-detected if not specified.')
+    parser.add_argument('--per', default= 1, type=float, help='Percentage of labeled samples to use for training/validation.')
+    parser.add_argument('--seed', default=111, type=int, help='Random seed for reproducibility.')
+    parser.add_argument('--num_workers', default=2, type=int, help='Number of workers for data loading.')
+    parser.add_argument('--batch_size', type=int, default=500, help='Batch size for training.')
+    parser.add_argument('--balance_source', type=bool_flag, default=True, help='Use class balanced batches for source.')
+    parser.add_argument('--num_pixels', default=2, type=int, help='Number of pixels to sample from the input sample.')
+    parser.add_argument('--seq_length', default=30, type=int, help='Number of time steps to sample from the input sample.')
+    parser.add_argument('--data_root', default='/mnt/d/All_Documents/documents/ViT/dataset/timematch', type=str, help='Path to datasets root directory.')
+
+    parser.add_argument('--source', default='france/31TCJ/2017', type=str, help='Source domain.')
+    parser.add_argument('--target', default='france/31TCJ/2017', type=str)
+
+    parser.add_argument('--combine_spring_and_winter', action='store_true', help='Combine spring and winter classes.')
+    parser.add_argument('--num_folds', default=1, type=int, help='Number of cross-validation folds.')
+    parser.add_argument("--val_ratio", default=0.1, type=float, help='Validation ratio.')
+    parser.add_argument("--test_ratio", default=0.2, type=float, help='Test ratio.')
+    parser.add_argument('--sample_pixels_val', action='store_true', help='Sample pixels during validation.')
 
     args = parser.parse_args()
 
