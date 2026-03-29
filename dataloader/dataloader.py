@@ -1,3 +1,5 @@
+import sys
+
 import torch
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
@@ -6,6 +8,7 @@ import os
 import numpy as np
 from .augmentations import DataTransform, DataTransform_FD
 import torch.fft as fft
+
 
 class Load_Dataset(Dataset):
     def __init__(self, dataset, dataset_configs):
@@ -24,7 +27,7 @@ class Load_Dataset(Dataset):
             x_data = x_data.transpose(0, 2, 1)
 
         x_data_weak, x_data_strong, x_data_strong2 = DataTransform(x_data, dataset_configs)
-        
+
         # Convert to torch tensor
         if isinstance(x_data, np.ndarray):
             x_data = torch.from_numpy(x_data)
@@ -46,7 +49,7 @@ class Load_Dataset(Dataset):
         """Transfer x_data to Frequency Domain. If use fft.fft, the output has the same shape; if use fft.rfft, 
         the output shape is half of the time window."""
         window_length = x_data.shape[-1]
-        x_data_f = fft.fft(x_data).abs() 
+        x_data_f = fft.fft(x_data).abs()
         x_data_f_weak, x_data_f_strong, x_data_f_strong2 = DataTransform_FD(x_data_f, dataset_configs)
 
         # Convert to torch tensor
@@ -61,7 +64,6 @@ class Load_Dataset(Dataset):
 
         if isinstance(x_data_f_strong2, np.ndarray):
             x_data_f_strong2 = torch.from_numpy(x_data_f_strong2)
-
 
         # Normalize data
         if dataset_configs.normalize:
@@ -103,6 +105,14 @@ class Load_Dataset(Dataset):
         self.len = x_data.shape[0]
 
     def __getitem__(self, index):
+
+        if self.y_data is not None:
+            if index >= len(self.y_data):
+                raise IndexError(
+                    f"CRITICAL: Index {index} exceeds y_data length ({len(self.y_data)})! "
+                    f"x_data length: {self.x_data.shape[0]}"
+                )
+
         x = self.x_data[index]
         x_weak = self.x_data_weak[index]
         x_strong = self.x_data_strong[index]
@@ -115,11 +125,14 @@ class Load_Dataset(Dataset):
             x = self.transform4(self.x_data[index].reshape(self.num_channels, -1, 1)).reshape(self.x_data[index].shape)
 
         if self.transform:
-            x_weak = self.transform(self.x_data_weak[index].reshape(self.num_channels, -1, 1)).reshape(self.x_data_weak[index].shape)
-        if self.transform2:    
-            x_strong = self.transform2(self.x_data_strong[index].reshape(self.num_channels, -1, 1)).reshape(self.x_data_strong[index].shape)
-        if self.transform3:    
-            x_strong2 = self.transform3(self.x_data_strong2[index].reshape(self.num_channels, -1, 1)).reshape(self.x_data_strong2[index].shape)
+            x_weak = self.transform(self.x_data_weak[index].reshape(self.num_channels, -1, 1)).reshape(
+                self.x_data_weak[index].shape)
+        if self.transform2:
+            x_strong = self.transform2(self.x_data_strong[index].reshape(self.num_channels, -1, 1)).reshape(
+                self.x_data_strong[index].shape)
+        if self.transform3:
+            x_strong2 = self.transform3(self.x_data_strong2[index].reshape(self.num_channels, -1, 1)).reshape(
+                self.x_data_strong2[index].shape)
         y = self.y_data[index] if self.y_data is not None else None
         return x_weak, y, index, x_strong, x_strong2, x, x_f_weak, x_f_strong, x_f_strong2, x_f
 

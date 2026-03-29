@@ -95,9 +95,8 @@ class Normalize(object):
         max_pixel_value (int): Max value of pixels to move pixels to [0, 1]
     """
 
-    def __init__(self, max_pixel_value=65535, eps=1e-8):
+    def __init__(self, max_pixel_value=65535):
         self.max_pixel_value = max_pixel_value
-        self.eps = eps # 保存 epsilon
 
         # approximate max values
         max_parcel_box_m = 10000
@@ -108,15 +107,16 @@ class Normalize(object):
         self.max_extra_values = np.array([max_perimeter, max_area, max_perimeter_area_ratio, max_cover_ratio])
 
     def __call__(self, sample):
-        sample['pixels'] = np.clip(sample['pixels'], 0, self.max_pixel_value).astype(np.float32) / (self.max_pixel_value + self.eps)
+        sample['pixels'] = np.clip(sample['pixels'], 0, self.max_pixel_value).astype(np.float32) / self.max_pixel_value
         if 'extra' in sample:
-            sample['extra'] = sample['extra'].astype(np.float32) / (self.max_extra_values + self.eps)
+            sample['extra'] = sample['extra'].astype(np.float32) / self.max_extra_values
         return sample
 
 class ToTensor(object):
     def __call__(self, sample):
+        sample['pixels'] = torch.from_numpy(sample['pixels'].astype(np.float32))
         sample['valid_pixels'] = torch.from_numpy(sample['valid_pixels'].astype(np.float32))
-        sample['positions'] = torch.from_numpy(sample['positions'].astype(np.int64))
+        sample['positions'] = torch.from_numpy(sample['positions'].astype(np.long))
         if 'extra' in sample:
             sample['extra'] = torch.from_numpy(sample['extra'].astype(np.float32))
         if isinstance(sample['label'], int):
@@ -124,28 +124,3 @@ class ToTensor(object):
         return sample
 
 
-# 在 transforms.py 中添加
-class AddPixelLabels:
-    def __init__(self, num_classes=None):
-        # num_classes 可选，这里不需要
-        pass
-
-    def __call__(self, sample):
-        """
-        sample 应包含:
-          - 'pixels': (T, C, N)
-          - 'label': scalar (int or tensor)
-        添加:
-          - 'pixel_labels': (N,)
-        """
-        pixels = sample['pixels']
-        parcel_label = sample['label']
-        N = pixels.shape[-1]  # 现在 N 是固定的（因为前面已 RandomSamplePixels）
-
-        # 确保 parcel_label 是 int
-        if isinstance(parcel_label, torch.Tensor):
-            parcel_label = parcel_label.item()
-
-        pixel_labels = torch.full((N,), parcel_label, dtype=torch.long)
-        sample['pixel_labels'] = pixel_labels
-        return sample

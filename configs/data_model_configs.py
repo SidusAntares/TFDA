@@ -113,10 +113,10 @@ class HAR():
         # self.features_len = 18 for sequential methods
         self.AR_hid_dim = 128
 
-class TM():
+class FR1():
     def __init__(self):
-        super(TM, self)
-        self.scenarios = [("FR1", "FR2"), ("FR1", "DK1"), ]
+        super(FR1, self)
+        self.scenarios = [("FR1", "FR2"), ("FR1", "AT1"), ("FR1", "DK1"), ]
         # self.scenarios = [("7", "13")]
         self.sequence_len = 30
         self.shuffle = True
@@ -145,4 +145,100 @@ class TM():
 
         self.TSlength_aligned = 30
 
+class FR2():
+    def __init__(self):
+        super(FR2, self)
+        # self.scenarios = [("FR2", "FR1"),("FR2", "AT1"), ("FR21", "DK1"),  ]
+        self.scenarios = [("FR2", "FR1"),  ]
+        # self.scenarios = [("7", "13")]
+        self.sequence_len = 30
+        self.shuffle = True
+        self.drop_last = False
+        self.normalize = True
+        self.jitter_scale_ratio = 1.5
+        self.jitter_ratio = 2
+        self.max_seg = 5
+
+        # model configs
+        self.input_channels = 10
+        self.kernel_size = 5
+        self.stride = 1
+        self.dropout = 0.0005
+        self.num_classes = 13
+        self.temp = 2.0
+
+        # CNN and RESNET features
+        self.mid_channels = 64
+        self.final_out_channels = 128
+        self.features_len = 1
+        # self.features_len = 18 for sequential methods
+        self.AR_hid_dim = 128
+
+        self.fourier_modes = 8
+
+        self.TSlength_aligned = 30
+
+class DK1():
+    def __init__(self):
+        super(DK1, self)
+        self.scenarios = [("DK1", "FR1"),("DK1", "FR2"),("DK1", "AT1"), ]
+        # self.scenarios = [("7", "13")]
+        self.sequence_len = 30
+        self.shuffle = True
+        self.drop_last = False
+        self.normalize = True
+        self.jitter_scale_ratio = 1.5
+        self.jitter_ratio = 2
+        self.max_seg = 5
+
+        # model configs
+        self.input_channels = 10
+        self.kernel_size = 5
+        self.stride = 1
+        self.dropout = 0.0005
+        self.num_classes = 13
+        self.temp = 2.0
+
+        # CNN and RESNET features
+        self.mid_channels = 64
+        self.final_out_channels = 128
+        self.features_len = 1
+        # self.features_len = 18 for sequential methods
+        self.AR_hid_dim = 128
+
+        self.fourier_modes = 8
+
+        self.TSlength_aligned = 30
+
+class AT1():
+    def __init__(self):
+        super(AT1, self)
+        self.scenarios = [("AT1", "FR1"),("AT1", "FR2"),("AT1", "DK1"), ]
+        # self.scenarios = [("7", "13")]
+        self.sequence_len = 30
+        self.shuffle = True
+        self.drop_last = False
+        self.normalize = True
+        self.jitter_scale_ratio = 1.5
+        self.jitter_ratio = 2
+        self.max_seg = 5
+
+        # model configs
+        self.input_channels = 10
+        self.kernel_size = 5
+        self.stride = 1
+        self.dropout = 0.0005
+        self.num_classes = 11
+        self.temp = 2.0
+
+        # CNN and RESNET features
+        self.mid_channels = 64
+        self.final_out_channels = 128
+        self.features_len = 1
+        # self.features_len = 18 for sequential methods
+        self.AR_hid_dim = 128
+
+        self.fourier_modes = 8
+
+        self.TSlength_aligned = 30
 

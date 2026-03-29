@@ -38,10 +38,10 @@ class AbstractTrainer(object):
 
 
         # paths
-        self.home_path = os.path.dirname(os.getcwd())
+        self.home_path = os.getcwd()
         self.save_dir = args.save_dir
-        # self.data_path = os.path.join(args.data_path, self.dataset)
-        self.data_path = args.data_path
+        self.data_path = os.path.join(args.data_path, self.dataset)
+        # self.data_path = args.data_path
         self.num_neighbors = args.num_neighbors
         # self.create_save_dir(os.path.join(self.home_path,  self.save_dir ))
 

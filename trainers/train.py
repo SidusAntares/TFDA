@@ -1,7 +1,7 @@
 import sys
-
-sys.path.append('/home/sidusantares/data/TFDA')
-
+import os
+sys.path.append('/data/user/TFDA')
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import os
 import pandas as pd
 
@@ -83,7 +83,7 @@ class Trainer(AbstractTrainer):
 
 if __name__ == "__main__":
     # ========  Experiments Name ================
-    parser.add_argument('--save_dir', default='experiments_logs13', type=str,
+    parser.add_argument('--save_dir', default='./experiments_logs13', type=str,
                         help='Directory containing all experiments')
     parser.add_argument('-run_description', default=None, type=str,
                         help='Description of run, if none, DA method name will be used')
@@ -94,7 +94,7 @@ if __name__ == "__main__":
     # ========= Select the DATASET ==============
     parser.add_argument('--data_path', default=r'./processed_data', type=str,
                         help='Path containing datase2t')
-    parser.add_argument('--dataset', default='TM', type=str, help='Dataset of choice: (WISDM - EEG - HAR - HHAR_SA)')
+    parser.add_argument('--dataset', default='FR1', type=str, help='Dataset of choice: (WISDM - EEG - HAR - HHAR_SA)')
 
 
     # ========= Select the BACKBONE ==============

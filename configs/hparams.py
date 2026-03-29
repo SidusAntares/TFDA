@@ -67,11 +67,11 @@ class HAR():
             'SFTSDA': {'pre_learning_rate': 0.001, 'learning_rate': 0.0001, 'ent_loss_wt': 0.05897, 'im': 0.2759,  'TOV_wt': 0.5},
         }
 
-class TM():
+class FR1():
     def __init__(self):
-        super(TM, self).__init__()
+        super(FR1, self).__init__()
         self.train_params = {
-            'num_epochs': 50,
+            'num_epochs': 25,
             'batch_size': 500,
             'weight_decay': 1e-4,
             'step_size': 50,
@@ -87,3 +87,62 @@ class TM():
             'SFTSDA': {'pre_learning_rate': 0.001, 'learning_rate': 0.001, 'ent_loss_wt': 0.05897, 'im': 0.2759,  'TOV_wt': 0.5},
         }
 
+class FR2():
+    def __init__(self):
+        super(FR2, self).__init__()
+        self.train_params = {
+            'num_epochs': 3,
+            'batch_size': 500,
+            'weight_decay': 1e-4,
+            'step_size': 50,
+            'lr_decay': 0.5
+        }
+        self.alg_hparams = {
+            'SHOT': {'pre_learning_rate': 0.001, 'learning_rate': 0.0001, 'ent_loss_wt': 0.6709, 'im': 0.8969,
+                     'target_cls_wt': 0.3312},
+            'AaD': {'pre_learning_rate': 0.003, 'learning_rate': 0.0001, 'beta': 10, 'alpha': 1},
+
+            'NRC': {'pre_learning_rate': 0.003, 'learning_rate': 0.00001, 'epsilon': 1e-5},
+            'MAPU': {'pre_learning_rate': 0.001, 'learning_rate': 0.0001, 'ent_loss_wt': 0.05897, 'im': 0.2759,  'TOV_wt': 0.5},
+            'SFTSDA': {'pre_learning_rate': 0.001, 'learning_rate': 0.001, 'ent_loss_wt': 0.05897, 'im': 0.2759,  'TOV_wt': 0.5},
+        }
+
+class DK1():
+    def __init__(self):
+        super(DK1, self).__init__()
+        self.train_params = {
+            'num_epochs': 25,
+            'batch_size': 500,
+            'weight_decay': 1e-4,
+            'step_size': 50,
+            'lr_decay': 0.5
+        }
+        self.alg_hparams = {
+            'SHOT': {'pre_learning_rate': 0.001, 'learning_rate': 0.0001, 'ent_loss_wt': 0.6709, 'im': 0.8969,
+                     'target_cls_wt': 0.3312},
+            'AaD': {'pre_learning_rate': 0.003, 'learning_rate': 0.0001, 'beta': 10, 'alpha': 1},
+
+            'NRC': {'pre_learning_rate': 0.003, 'learning_rate': 0.00001, 'epsilon': 1e-5},
+            'MAPU': {'pre_learning_rate': 0.001, 'learning_rate': 0.0001, 'ent_loss_wt': 0.05897, 'im': 0.2759,  'TOV_wt': 0.5},
+            'SFTSDA': {'pre_learning_rate': 0.001, 'learning_rate': 0.001, 'ent_loss_wt': 0.05897, 'im': 0.2759,  'TOV_wt': 0.5},
+        }
+
+class AT1():
+    def __init__(self):
+        super(AT1, self).__init__()
+        self.train_params = {
+            'num_epochs': 25,
+            'batch_size': 500,
+            'weight_decay': 1e-4,
+            'step_size': 50,
+            'lr_decay': 0.5
+        }
+        self.alg_hparams = {
+            'SHOT': {'pre_learning_rate': 0.001, 'learning_rate': 0.0001, 'ent_loss_wt': 0.6709, 'im': 0.8969,
+                     'target_cls_wt': 0.3312},
+            'AaD': {'pre_learning_rate': 0.003, 'learning_rate': 0.0001, 'beta': 10, 'alpha': 1},
+
+            'NRC': {'pre_learning_rate': 0.003, 'learning_rate': 0.00001, 'epsilon': 1e-5},
+            'MAPU': {'pre_learning_rate': 0.001, 'learning_rate': 0.0001, 'ent_loss_wt': 0.05897, 'im': 0.2759,  'TOV_wt': 0.5},
+            'SFTSDA': {'pre_learning_rate': 0.001, 'learning_rate': 0.001, 'ent_loss_wt': 0.05897, 'im': 0.2759,  'TOV_wt': 0.5},
+        }
