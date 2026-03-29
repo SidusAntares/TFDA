@@ -91,7 +91,46 @@ class AbstractTrainer(object):
         self.logger.debug(f'Adaptation stage..........')
         self.logger.debug("=" * 45)
 
-        self.tgt_last_model_fe, self.tgt_last_model_classifier, self.tgt_best_model_fe, self.tgt_best_model_classifier, self.last_model, self.best_model = self.algorithm.update(self.trg_train_dl, self.trg_test_dl, self.loss_avg_meters, self.logger, self.num_neighbors, self.dataset_configs, self.temp_length, self.trg_train_length)
+        if self.da_method == "SFTSDA":
+            update_args = (
+                self.trg_train_dl,
+                self.trg_test_dl,
+                self.src_test_dl,  # ← 新增
+                self.loss_avg_meters,
+                self.logger,
+                self.num_neighbors,
+                self.dataset_configs,
+                self.temp_length,
+                self.trg_train_length
+            )
+        else:
+            # For other algorithms like MAPU
+            update_args = (
+                self.trg_train_dl,
+                self.trg_test_dl,
+                self.loss_avg_meters,
+                self.logger,
+                self.num_neighbors,
+                self.dataset_configs,
+                self.temp_length,
+                self.trg_train_length
+            )
+
+        results = self.algorithm.update(*update_args)
+
+        # Unpack results (all algorithms should return consistent number of outputs)
+        if self.da_method == "SFTSDA":
+            (self.tgt_last_model_fe, self.tgt_last_model_classifier,
+             self.tgt_best_model_fe, self.tgt_best_model_classifier,
+             self.last_model, self.best_model) = results
+        else:
+            # For MAPU: returns (last_model, best_model)
+            self.last_model, self.best_model = results
+            # You may need to handle feature_extractor/classifier differently for non-SFTSDA
+            self.tgt_last_model_fe = self.algorithm.feature_extractor
+            self.tgt_last_model_classifier = getattr(self.algorithm, 'classifier', None)
+            self.tgt_best_model_fe = self.algorithm.feature_extractor
+            self.tgt_best_model_classifier = getattr(self.algorithm, 'classifier', None)
 
         return self.src_fe, self.src_classifier, self.tgt_last_model_fe, self.tgt_last_model_classifier, self.tgt_best_model_fe, self.tgt_best_model_classifier, self.non_adapted_model,  self.last_model, self.best_model
     

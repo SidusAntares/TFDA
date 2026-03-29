@@ -300,8 +300,7 @@ class SFTSDA(Algorithm):
         src_only_model_f = deepcopy(self.network2.state_dict())
         return self.feature_extractor, self.classifier_t, src_only_model
 
-    def update(self, trg_dataloader, trg_test_dataloader, avg_meter, logger, num_neighbors, configs, temp_length, trg_train_dataset_length):
-
+    def update(self, trg_dataloader, trg_test_dataloader, src_test_dataloader, avg_meter, logger, num_neighbors, configs, temp_length, trg_train_dataset_length):
         # defining best and last model
         best_src_risk = float('inf')
         best_model = self.network1.state_dict()
@@ -506,6 +505,47 @@ class SFTSDA(Algorithm):
                 
                 for key, val in losses.items():
                     avg_meter[key].update(val, 32)
+
+            # Evaluate source risk periodically
+            if (epoch) % 2 == 1:  # or (epoch + 1) % 10 == 0
+                self.feature_extractor.eval()
+                self.classifier_t.eval()
+                self.classifier_f.eval()
+                src_losses = []
+
+                with torch.no_grad():
+                    for batch in src_test_dataloader:
+                        # 注意：你的 src_dataloader 返回 10 个元素
+                        src_x = batch[0].float().to(self.device)
+                        src_y = batch[1].long().to(self.device)
+                        src_xf = batch[6].float().to(self.device)  # 第7个是 src_xf
+
+                        # Forward pass
+                        src_feat, _, src_feat_f, _, _ = self.feature_extractor(src_x, src_xf)
+                        src_pred_t = self.classifier_t(src_feat)
+                        src_pred_f = self.classifier_f(src_feat_f)
+
+                        # Compute adaptive prediction (same as pretrain)
+                        probs_t, _ = src_pred_t.max(dim=1)
+                        probs_f, _ = src_pred_f.max(dim=1)
+                        an = probs_t / (probs_t + probs_f + 1e-8)
+                        bn = probs_f / (probs_t + probs_f + 1e-8)
+                        an = an.unsqueeze(1).expand(-1, self.configs.num_classes)
+                        bn = bn.unsqueeze(1).expand(-1, self.configs.num_classes)
+                        src_pred = an * src_pred_t + bn * src_pred_f
+
+                        src_loss = self.cross_entropy(src_pred, src_y)
+                        src_losses.append(src_loss.item())
+
+                if src_losses:
+                    src_risk = np.mean(src_losses)
+                    avg_meter['Src_cls_loss'].update(src_risk, len(src_losses))
+                    logger.debug(f"  [Eval] Src_cls_loss = {src_risk:.4f}")
+
+                # Resume training mode
+                self.feature_extractor.train()
+                self.classifier_t.train()
+                self.classifier_f.train()
 
             self.lr_scheduler_t.step()
             self.lr_scheduler_f.step()

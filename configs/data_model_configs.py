@@ -148,8 +148,8 @@ class FR1():
 class FR2():
     def __init__(self):
         super(FR2, self)
-        # self.scenarios = [("FR2", "FR1"),("FR2", "AT1"), ("FR21", "DK1"),  ]
-        self.scenarios = [("FR2", "FR1"),  ]
+        self.scenarios = [("FR2", "FR1"),("FR2", "AT1"), ("FR2", "DK1"),  ]
+        # self.scenarios = [("FR2", "FR1"),  ]
         # self.scenarios = [("7", "13")]
         self.sequence_len = 30
         self.shuffle = True

@@ -71,7 +71,7 @@ class FR1():
     def __init__(self):
         super(FR1, self).__init__()
         self.train_params = {
-            'num_epochs': 25,
+            'num_epochs': 50,
             'batch_size': 500,
             'weight_decay': 1e-4,
             'step_size': 50,
@@ -91,7 +91,7 @@ class FR2():
     def __init__(self):
         super(FR2, self).__init__()
         self.train_params = {
-            'num_epochs': 3,
+            'num_epochs': 50,
             'batch_size': 500,
             'weight_decay': 1e-4,
             'step_size': 50,
@@ -111,7 +111,7 @@ class DK1():
     def __init__(self):
         super(DK1, self).__init__()
         self.train_params = {
-            'num_epochs': 25,
+            'num_epochs': 50,
             'batch_size': 500,
             'weight_decay': 1e-4,
             'step_size': 50,
@@ -131,7 +131,7 @@ class AT1():
     def __init__(self):
         super(AT1, self).__init__()
         self.train_params = {
-            'num_epochs': 25,
+            'num_epochs': 50,
             'batch_size': 500,
             'weight_decay': 1e-4,
             'step_size': 50,
