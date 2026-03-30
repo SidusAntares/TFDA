@@ -103,7 +103,7 @@ if __name__ == "__main__":
     # ========= Experiment settings ===============
     parser.add_argument('--num_runs', default=1, type=int, help='Number of consecutive run with different seeds')
     parser.add_argument('--device', default="cuda", type=str, help='cpu or cuda')
-    parser.add_argument('--num_neighbors', default=10, type=int)
+    parser.add_argument('--num_neighbors', default=20, type=int)
     parser.add_argument('--temporal_length', default=5, type=int)
     # parser.add_argument('--plot_tsne', default=True, type=bool, help='Plot t-sne for training and testing or not?')
 

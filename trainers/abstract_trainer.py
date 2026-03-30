@@ -1,4 +1,5 @@
 import sys
+
 sys.path.append('../../ADATIME/')
 import torch
 import torch.nn.functional as F
@@ -20,6 +21,7 @@ from models.models import get_backbone_class
 
 warnings.filterwarnings("ignore", category=sklearn.exceptions.UndefinedMetricWarning)
 
+
 class AbstractTrainer(object):
     """
    This class contain the main training functions for our AdAtime
@@ -36,7 +38,6 @@ class AbstractTrainer(object):
 
         self.experiment_description = args.dataset
 
-
         # paths
         self.home_path = os.getcwd()
         self.save_dir = args.save_dir
@@ -44,7 +45,6 @@ class AbstractTrainer(object):
         # self.data_path = args.data_path
         self.num_neighbors = args.num_neighbors
         # self.create_save_dir(os.path.join(self.home_path,  self.save_dir ))
-
 
         # Specify runs
         self.num_runs = args.num_runs
@@ -57,7 +57,7 @@ class AbstractTrainer(object):
 
         # Specify number of hparams
         self.hparams = {**self.hparams_class.alg_hparams[self.da_method],
-                                **self.hparams_class.train_params}
+                        **self.hparams_class.train_params}
 
         self.temp_length = args.temporal_length
 
@@ -65,13 +65,12 @@ class AbstractTrainer(object):
         self.num_classes = self.dataset_configs.num_classes
         self.ACC = Accuracy(task="multiclass", num_classes=self.num_classes)
         self.F1 = F1Score(task="multiclass", num_classes=self.num_classes, average="macro")
-        self.AUROC = AUROC(task="multiclass", num_classes=self.num_classes)        
-
+        self.AUROC = AUROC(task="multiclass", num_classes=self.num_classes)
 
     def sweep(self):
         # sweep configurations
         pass
-    
+
     def train_model(self):
         # Get the algorithm and the backbone network
         algorithm_class = get_algorithm_class(self.da_method)
@@ -85,7 +84,9 @@ class AbstractTrainer(object):
         self.logger.debug(f'Pretraining stage..........')
         self.logger.debug("=" * 45)
 
-        self.src_fe, self.src_classifier, self.non_adapted_model = self.algorithm.pretrain(self.src_train_dl, self.pre_loss_avg_meters, self.logger)
+        self.src_fe, self.src_classifier, self.non_adapted_model = self.algorithm.pretrain(self.src_train_dl,
+                                                                                           self.pre_loss_avg_meters,
+                                                                                           self.logger)
         # adapting step
         self.logger.debug("=" * 45)
         self.logger.debug(f'Adaptation stage..........')
@@ -132,8 +133,8 @@ class AbstractTrainer(object):
             self.tgt_best_model_fe = self.algorithm.feature_extractor
             self.tgt_best_model_classifier = getattr(self.algorithm, 'classifier', None)
 
-        return self.src_fe, self.src_classifier, self.tgt_last_model_fe, self.tgt_last_model_classifier, self.tgt_best_model_fe, self.tgt_best_model_classifier, self.non_adapted_model,  self.last_model, self.best_model
-    
+        return self.src_fe, self.src_classifier, self.tgt_last_model_fe, self.tgt_last_model_classifier, self.tgt_best_model_fe, self.tgt_best_model_classifier, self.non_adapted_model, self.last_model, self.best_model
+
     def evaluate(self, test_loader):
         feature_extractor = self.algorithm.feature_extractor.to(self.device)
         classifier = self.algorithm.classifier_t.to(self.device)
@@ -144,7 +145,7 @@ class AbstractTrainer(object):
         total_loss, preds_list, labels_list = [], [], []
 
         with torch.no_grad():
-            for data, labels,_, _, _, _, data_f, _, _, _ in test_loader:
+            for data, labels, _, _, _, _, data_f, _, _, _ in test_loader:
                 data = data.float().to(self.device)
                 data_f = data.float().to(self.device)
                 labels = labels.view((-1)).long().to(self.device)
@@ -156,7 +157,7 @@ class AbstractTrainer(object):
                 # compute loss
                 loss = F.cross_entropy(predictions, labels)
                 total_loss.append(loss.item())
-                pred = predictions.detach() 
+                pred = predictions.detach()
 
                 # append predictions and labels
                 preds_list.append(pred)
@@ -175,7 +176,8 @@ class AbstractTrainer(object):
         self.src_train_dl, _ = data_generator(self.data_path, src_id, self.dataset_configs, self.hparams, "train")
         self.src_test_dl, _ = data_generator(self.data_path, src_id, self.dataset_configs, self.hparams, "test")
 
-        self.trg_train_dl, self.trg_train_length = data_generator(self.data_path, trg_id, self.dataset_configs, self.hparams, "train")
+        self.trg_train_dl, self.trg_train_length = data_generator(self.data_path, trg_id, self.dataset_configs,
+                                                                  self.hparams, "train")
         self.trg_test_dl, _ = data_generator(self.data_path, trg_id, self.dataset_configs, self.hparams, "test")
 
     def create_save_dir(self, save_dir):
@@ -199,13 +201,13 @@ class AbstractTrainer(object):
 
         return risks, metrics
 
-    def save_tables_to_file(self,table_results, name):
+    def save_tables_to_file(self, table_results, name):
         # save to file if needed
-        table_results.to_csv(os.path.join(self.exp_log_dir,f"{name}.csv"))
+        table_results.to_csv(os.path.join(self.exp_log_dir, f"{name}.csv"))
 
     def save_checkpoint(self, home_path, log_dir, non_adapted, last_model, best_model):
         save_dict = {
-            "non_adapted":non_adapted,
+            "non_adapted": non_adapted,
             "last": last_model,
             "best": best_model
         }
@@ -225,7 +227,7 @@ class AbstractTrainer(object):
         return results, summary_metrics
 
     def log_summary_metrics_wandb(self, results, risks):
-       
+
         # Calculate average and standard deviation for metrics
         avg_metrics = [np.mean(results.get_column(metric)) for metric in results.columns[2:]]
         std_metrics = [np.std(results.get_column(metric)) for metric in results.columns[2:]]
@@ -241,7 +243,7 @@ class AbstractTrainer(object):
         results.add_data('mean', '-', *avg_metrics)
         results.add_data('std', '-', *std_metrics)
 
-        # append avg and std values to risks 
+        # append avg and std values to risks
         results.add_data('mean', '-', *avg_risks)
         risks.add_data('std', '-', *std_risks)
 
@@ -249,18 +251,20 @@ class AbstractTrainer(object):
         # log wandb
         wandb.log({'results': total_results})
         wandb.log({'risks': total_risks})
-        wandb.log({'hparams': wandb.Table(dataframe=pd.DataFrame(dict(self.hparams).items(), columns=['parameter', 'value']), allow_mixed_types=True)})
+        wandb.log({'hparams': wandb.Table(
+            dataframe=pd.DataFrame(dict(self.hparams).items(), columns=['parameter', 'value']),
+            allow_mixed_types=True)})
         wandb.log(summary_metrics)
         wandb.log(summary_risks)
 
     def calculate_metrics(self):
-       
+
         self.evaluate(self.trg_test_dl)
-        # accuracy  
+        # accuracy
         acc = self.ACC(self.full_preds.argmax(dim=1).cpu(), self.full_labels.cpu()).item()
         # f1
         f1 = self.F1(self.full_preds.argmax(dim=1).cpu(), self.full_labels.cpu()).item()
-        # auroc 
+        # auroc
         auroc = self.AUROC(self.full_preds.cpu(), self.full_labels.cpu()).item()
 
         print(f'acc\t:{acc}')
@@ -270,7 +274,7 @@ class AbstractTrainer(object):
         return acc, f1, auroc
 
     def calculate_risks(self):
-         # calculation based source test data
+        # calculation based source test data
         self.evaluate(self.src_test_dl)
         src_risk = self.loss.item()
         # calculation based target test data
@@ -291,7 +295,7 @@ class AbstractTrainer(object):
         table = pd.concat([table, results_df], ignore_index=True)
 
         return table
-    
+
     def add_mean_std_table(self, table, columns):
         # Calculate average and standard deviation for metrics
         avg_metrics = [table[metric].mean() for metric in columns[2:]]

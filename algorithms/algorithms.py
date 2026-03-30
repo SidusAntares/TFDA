@@ -2,8 +2,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-from models.models import classifier, Temporal_Imputer, masking, get_distances, soft_k_nearest_neighbors, refine_predictions, eval_and_label_dataset, update_labels, tf_encoder
-from models.loss import EntropyLoss, CrossEntropyLabelSmooth, evidential_uncertainty, evident_dl, contrastive_loss, TEntropyLoss
+from models.models import classifier, Temporal_Imputer, masking, get_distances, soft_k_nearest_neighbors, \
+    refine_predictions, eval_and_label_dataset, update_labels, tf_encoder
+from models.loss import EntropyLoss, CrossEntropyLabelSmooth, evidential_uncertainty, evident_dl, contrastive_loss, \
+    TEntropyLoss
 from scipy.spatial.distance import cdist
 from torch.optim.lr_scheduler import StepLR
 from copy import deepcopy
@@ -266,26 +268,26 @@ class SFTSDA(Algorithm):
                 src_pred_t = torch.nn.LogSoftmax(dim=1)(src_pred_t)
                 src_pred_f = self.classifier_f(src_feat_f)
                 src_pred_f = torch.nn.LogSoftmax(dim=1)(src_pred_f)
-                
+
                 probs_t, _ = src_pred_t.max(dim=1)
                 probs_f, _ = src_pred_f.max(dim=1)
 
                 a = probs_t
                 b = probs_f
-                an = a/(a+b)
-                bn = b/(a+b)
+                an = a / (a + b)
+                bn = b / (a + b)
                 an = torch.unsqueeze(an, dim=1).expand(a.size(dim=0), self.configs.num_classes)
                 bn = torch.unsqueeze(bn, dim=1).expand(b.size(dim=0), self.configs.num_classes)
-                
+
                 src_pred = an * src_pred_t + bn * src_pred_f
-                
+
                 # normal cross entropy
                 src_cls_loss = self.cross_entropy(src_pred, src_y)
 
-                total_loss = src_cls_loss 
+                total_loss = src_cls_loss
                 total_loss.backward()
                 self.pre_optimizer.step()
-                
+
                 losses = {'cls_loss': src_cls_loss.detach().item()}
                 # acculate loss
                 for key, val in losses.items():
@@ -300,7 +302,8 @@ class SFTSDA(Algorithm):
         src_only_model_f = deepcopy(self.network2.state_dict())
         return self.feature_extractor, self.classifier_t, src_only_model
 
-    def update(self, trg_dataloader, trg_test_dataloader, src_test_dataloader, avg_meter, logger, num_neighbors, configs, temp_length, trg_train_dataset_length):
+    def update(self, trg_dataloader, trg_test_dataloader, src_test_dataloader, avg_meter, logger, num_neighbors,
+               configs, temp_length, trg_train_dataset_length):
         # defining best and last model
         best_src_risk = float('inf')
         best_model = self.network1.state_dict()
@@ -311,34 +314,43 @@ class SFTSDA(Algorithm):
         tgt_best_fe = self.feature_extractor
         tgt_best_classifier = self.classifier_t
 
-        moco_model = AdaMoCo(src_model = self.network1, momentum_model = self.momentum_network, features_length=configs.final_out_channels, num_classes=self.configs.num_classes, dataset_length=trg_train_dataset_length, temporal_length=temp_length)
-        banks = eval_and_label_dataset(0, self.feature_extractor, self.classifier_t, None, trg_test_dataloader, trg_dataloader, num_neighbors)
+        moco_model = AdaMoCo(src_model=self.network1, momentum_model=self.momentum_network,
+                             features_length=configs.final_out_channels, num_classes=self.configs.num_classes,
+                             dataset_length=trg_train_dataset_length, temporal_length=temp_length)
+        banks = eval_and_label_dataset(0, self.feature_extractor, self.classifier_t, None, trg_test_dataloader,
+                                       trg_dataloader, num_neighbors)
         # freeze both classifier and ood detector
-        for k, v in self.classifier_t.named_parameters():
-            v.requires_grad = False
-        for k, v in self.classifier_f.named_parameters():
-            v.requires_grad = False
+        # for k, v in self.classifier_t.named_parameters():
+        #     v.requires_grad = False
+        # for k, v in self.classifier_f.named_parameters():
+        #     v.requires_grad = False
 
         N = 12
         alpha = 0.005
         betha = 1e-4
 
+        for param in self.feature_extractor.parameters():
+            param.requires_grad = False
+
         # obtain pseudo labels
         for epoch in range(1, self.hparams["num_epochs"] + 1):
-            self.feature_extractor.train()
+            # self.feature_extractor.train()
+            self.feature_extractor.eval()
             self.classifier_t.train()
             self.network1.train()
             self.classifier_f.train()
             self.network2.train()
             moco_model.train()
 
-            for step, (trg_x, y, trg_idx, src_x_strong, src_x_strong2, x, x_f_weak, x_f_strong, x_f_strong2, x_f) in enumerate(trg_dataloader):
+            for step, (trg_x, y, trg_idx, src_x_strong, src_x_strong2, x, x_f_weak, x_f_strong, x_f_strong2,
+                       x_f) in enumerate(trg_dataloader):
 
                 trg_x = trg_x.float().to(self.device)
                 x_f_weak = x_f_weak.float().to(self.device)
                 x = x.float().to(self.device)
                 x_f = x_f.float().to(self.device)
-                src_x_strong, src_x_strong2 = src_x_strong.float().to(self.device), src_x_strong2.float().to(self.device)
+                src_x_strong, src_x_strong2 = src_x_strong.float().to(self.device), src_x_strong2.float().to(
+                    self.device)
                 x_f_strong, x_f_strong2 = x_f_strong.float().to(self.device), x_f_strong2.float().to(self.device)
 
                 self.optimizer_t.zero_grad()
@@ -352,19 +364,24 @@ class SFTSDA(Algorithm):
                 outputs_emas = []
 
                 with torch.no_grad():
-                    for jj in range(N-2):
-                        outputs_emas.append(moco_model(trg_x, x_f_weak, self.feature_extractor, self.classifier_t, self.classifier_f, self.momentum_feature_extractor, self.momentum_classifier, cls_only=True)[1]) 
-                    
+                    for jj in range(N - 2):
+                        outputs_emas.append(
+                            moco_model(trg_x, x_f_weak, self.feature_extractor, self.classifier_t, self.classifier_f,
+                                       self.momentum_feature_extractor, self.momentum_classifier, cls_only=True)[1])
+
                     outputs_ema = torch.stack(outputs_emas).mean(0)
                     logits_w = torch.nn.functional.softmax(outputs_ema, dim=1)
                     probs_w, pseudo_labels_w = logits_w.max(dim=1)
 
                 # extract features
-                trg_feat, trg_pred, trg_feat_f, trg_pred_f  = moco_model(trg_x, x_f_weak, self.feature_extractor, self.classifier_t, self.classifier_f, self.momentum_feature_extractor, self.momentum_classifier, ema_only=True)
+                trg_feat, trg_pred, trg_feat_f, trg_pred_f = moco_model(trg_x, x_f_weak, self.feature_extractor,
+                                                                        self.classifier_t, self.classifier_f,
+                                                                        self.momentum_feature_extractor,
+                                                                        self.momentum_classifier, ema_only=True)
 
                 trg_prob = torch.nn.Softmax(dim=1)(trg_pred)
                 trg_prob_f = torch.nn.Softmax(dim=1)(trg_pred_f)
-                
+
                 # pseudolabel
                 _, pseudo_labels = trg_prob.max(dim=1)
 
@@ -372,10 +389,13 @@ class SFTSDA(Algorithm):
                 with torch.no_grad():
                     probs = trg_prob
                     pseudo_labels, probs_refine, _, _ = refine_predictions(trg_feat, probs, banks, num_neighbors)
+                    if epoch == 1 and step == 0:
+                        print("Pseudo-label distribution:",
+                              torch.bincount(pseudo_labels, minlength=self.configs.num_classes))
 
                 # # Sample Selection ---------------------------------------------------------------------
                 pred_batch, _ = trg_prob.max(dim=1)
-                pred_start = torch.nn.functional.softmax(torch.squeeze(torch.stack(outputs_emas)), dim=2).max(2)[0] 
+                pred_start = torch.nn.functional.softmax(torch.squeeze(torch.stack(outputs_emas)), dim=2).max(2)[0]
                 ## Confidence Based Selection
                 pred_con = pred_start
                 conf_thres = pred_con.mean()
@@ -401,44 +421,45 @@ class SFTSDA(Algorithm):
                     threshold = torch.zeros(len(ind_remove))
                     num = 0
                     for kk in ind_remove:
-                        out     = torch.squeeze(outputs_ema[kk])
-                        out , _ = out.sort(descending=True)
+                        out = torch.squeeze(outputs_ema[kk])
+                        out, _ = out.sort(descending=True)
                         threshold[num] = out[0] - out[1]
-                        num    += 1
+                        num += 1
 
-                    pre_threshold = threshold.mean(0) 
-                    truth_array1  = threshold > pre_threshold
-                    truth_array2  = pred_std[ind_remove] < pred_std[ind_remove].mean(0)                   
-                    truth_array   = torch.logical_and(truth_array1.cuda(), truth_array2.cuda())
-                    ind_add       = truth_array.nonzero()
-                    
+                    pre_threshold = threshold.mean(0)
+                    truth_array1 = threshold > pre_threshold
+                    truth_array2 = pred_std[ind_remove] < pred_std[ind_remove].mean(0)
+                    truth_array = torch.logical_and(truth_array1.cuda(), truth_array2.cuda())
+                    ind_add = truth_array.nonzero()
+
                     try:
-                        ind_keep   = torch.cat((torch.squeeze(ind_keep), torch.squeeze(ind_remove[ind_add])), dim=0)
+                        ind_keep = torch.cat((torch.squeeze(ind_keep), torch.squeeze(ind_remove[ind_add])), dim=0)
                         ind_remove = torch.stack([kk for kk in ind_total if kk not in ind_keep])
                     except:
                         pass
 
                 try:
                     ### Apply Class-Balancing (Only the selected Samples) ###
-                    unique_labels, counts =  pseudo_labels_w[ind_keep].unique(return_counts = True)
-                    min_count             =  torch.min(counts)
+                    unique_labels, counts = pseudo_labels_w[ind_keep].unique(return_counts=True)
+                    min_count = torch.min(counts)
 
                     ## For Missing Classes
                     if len(counts) < self.configs.num_classes:
                         counts_new = torch.ones(self.configs.num_classes)
                         missing_classes = [ii for ii in range(self.configs.num_classes) if ii not in unique_labels]
-                        
+
                         for kk in missing_classes:
-                            indices = (pseudo_labels_w == kk).nonzero(as_tuple=True)[0] # find missing classes in pseudo labels
-                            if indices.numel()>0 and ind_keep.numel()>0:
-                                probs2,_  = probs_w[indices]
-                                _ , index_miss = probs2.sort(descending=True)  
+                            indices = (pseudo_labels_w == kk).nonzero(as_tuple=True)[
+                                0]  # find missing classes in pseudo labels
+                            if indices.numel() > 0 and ind_keep.numel() > 0:
+                                probs2, _ = probs_w[indices]
+                                _, index_miss = probs2.sort(descending=True)
                                 try:
-                                    ind_keep  = torch.cat((ind_keep, indices[index_miss[0:min_count]]))
+                                    ind_keep = torch.cat((ind_keep, indices[index_miss[0:min_count]]))
                                     ind_remove = torch.stack([kk for kk in ind_total if kk not in ind_keep])
                                 except:
                                     pass
-                                counts_new[kk] = 1 
+                                counts_new[kk] = 1
                             else:
                                 counts_new[kk] = 1
                         ## Other Classes
@@ -447,45 +468,65 @@ class SFTSDA(Algorithm):
                             counts_new[nn] = counts[num]
                             num += 1
                     else:
-                        counts_new = counts 
+                        counts_new = counts
                     trg_cls_loss = self.cross_entropy(trg_pred[ind_keep], pseudo_labels_w[ind_keep])
 
                 except:
-                    trg_cls_loss = torch.mean((torch.squeeze(outputs_ema)-torch.squeeze(trg_pred))**2)
+                    trg_cls_loss = torch.mean((torch.squeeze(outputs_ema) - torch.squeeze(trg_pred)) ** 2)
 
                 ### Propagation Loss ###
-                ## If the clean selected set is empty, calculate loss for all samples  
+                ## If the clean selected set is empty, calculate loss for all samples
                 try:
-                    propagation_loss = torch.mean((torch.squeeze(outputs_ema[ind_remove])-torch.squeeze(trg_pred[ind_remove]))**2)
+                    propagation_loss = torch.mean(
+                        (torch.squeeze(outputs_ema[ind_remove]) - torch.squeeze(trg_pred[ind_remove])) ** 2)
                 except:
                     propagation_loss = 0
 
                 # self-distillation
-                loss_sd = self.kl_loss(trg_prob, trg_prob_f) + self.kl_loss(trg_prob_f, trg_prob)
-                _, logits_q, logits_ctr, keys, logits_ctr_f, keys_f, _, _ = moco_model(trg_x, x_f_weak, self.feature_extractor, self.classifier_t, self.classifier_f, self.momentum_feature_extractor, self.momentum_classifier, src_x_strong, x_f_strong)
-                _, _, _, _, _, _, logits_ctr_tf, keys_zf = moco_model(trg_x, x_f_weak, self.feature_extractor, self.classifier_t, self.classifier_f, self.momentum_feature_extractor, self.momentum_classifier, trg_x, x_f_weak)
+                trg_log_prob = torch.nn.LogSoftmax(dim=1)(trg_pred)
+                trg_log_prob_f = torch.nn.LogSoftmax(dim=1)(trg_pred_f)
+                trg_prob = torch.nn.Softmax(dim=1)(trg_pred)
+                trg_prob_f = torch.nn.Softmax(dim=1)(trg_pred_f)
 
-                loss_ctr_t = contrastive_loss(logits_ins=logits_ctr, pseudo_labels=moco_model.mem_labels[trg_idx], mem_labels=moco_model.mem_labels[moco_model.idxs])
-                loss_ctr_f = contrastive_loss(logits_ins=logits_ctr_f, pseudo_labels=moco_model.mem_labels[trg_idx], mem_labels=moco_model.mem_labels[moco_model.idxs])
-                loss_ctr_tf = contrastive_loss(logits_ins=logits_ctr_tf, pseudo_labels=moco_model.mem_labels[trg_idx], mem_labels=moco_model.mem_labels[moco_model.idxs])
+                loss_sd = self.kl_loss(trg_log_prob, trg_prob_f.detach()) + self.kl_loss(trg_log_prob_f,
+                                                                                         trg_prob.detach())
+                _, logits_q, logits_ctr, keys, logits_ctr_f, keys_f, _, _ = moco_model(trg_x, x_f_weak,
+                                                                                       self.feature_extractor,
+                                                                                       self.classifier_t,
+                                                                                       self.classifier_f,
+                                                                                       self.momentum_feature_extractor,
+                                                                                       self.momentum_classifier,
+                                                                                       src_x_strong, x_f_strong)
+                _, _, _, _, _, _, logits_ctr_tf, keys_zf = moco_model(trg_x, x_f_weak, self.feature_extractor,
+                                                                      self.classifier_t, self.classifier_f,
+                                                                      self.momentum_feature_extractor,
+                                                                      self.momentum_classifier, trg_x, x_f_weak)
+
+                loss_ctr_t = contrastive_loss(logits_ins=logits_ctr, pseudo_labels=moco_model.mem_labels[trg_idx],
+                                              mem_labels=moco_model.mem_labels[moco_model.idxs])
+                loss_ctr_f = contrastive_loss(logits_ins=logits_ctr_f, pseudo_labels=moco_model.mem_labels[trg_idx],
+                                              mem_labels=moco_model.mem_labels[moco_model.idxs])
+                loss_ctr_tf = contrastive_loss(logits_ins=logits_ctr_tf, pseudo_labels=moco_model.mem_labels[trg_idx],
+                                               mem_labels=moco_model.mem_labels[moco_model.idxs])
 
                 lam = 0.5
-                loss_ctr = lam*(loss_ctr_t + loss_ctr_f) + (1-lam)*loss_ctr_tf
-                
-                moco_model.update_memory(epoch, trg_idx.to(self.device), keys, keys_f, keys_zf, pseudo_labels, y.to(self.device))
+                loss_ctr = lam * (loss_ctr_t + loss_ctr_f) + (1 - lam) * loss_ctr_tf
+
+                moco_model.update_memory(epoch, trg_idx.to(self.device), keys, keys_f, keys_zf, pseudo_labels,
+                                         y.to(self.device))
 
                 # uncertainty reduction loss
                 loss_ur = TEntropyLoss(t=configs.temp)(trg_prob)
 
                 # Curriculum learning
-                d = uncertainty_thres/conf_thres
+                d = uncertainty_thres / conf_thres
                 if epoch == 1:
                     mu_r = 1
                     mu_c = 0.5
                     mu_u = 0.5
                     mu_s = 0.5
                 else:
-                    mu_r = mu_r * (1-(alpha*math.exp(-1/d)))
+                    mu_r = mu_r * (1 - (alpha * math.exp(-1 / d)))
                     mu_c = mu_c * math.exp(-betha)
                     mu_u = mu_u * math.exp(-betha)
                     mu_s = mu_s * math.exp(-betha)
@@ -493,16 +534,19 @@ class SFTSDA(Algorithm):
                 '''
                 Overall objective loss
                 '''
-                loss = mu_r*trg_cls_loss + (1-mu_r)*propagation_loss + mu_c*loss_ctr + mu_u*loss_ur + mu_s*loss_sd
+                loss = mu_r * trg_cls_loss + (
+                            1 - mu_r) * propagation_loss + mu_c * loss_ctr + mu_u * loss_ur + mu_s * loss_sd
 
                 update_labels(banks, trg_idx, trg_feat, trg_pred)
 
                 loss.backward()
                 self.optimizer_t.step()
                 self.optimizer_f.step()
-                
-                losses = {'target_cls_loss': trg_cls_loss.detach().item(), 'sd_loss': loss_sd.detach().item(), 'prop_loss': propagation_loss.detach().item(), 'ur_loss': loss_ur.detach().item(), 'contr_loss': loss_ctr.detach().item(), 'Total_loss': loss.detach().item()}
-                
+
+                losses = {'target_cls_loss': trg_cls_loss.detach().item(), 'sd_loss': loss_sd.detach().item(),
+                          'prop_loss': propagation_loss.detach().item(), 'ur_loss': loss_ur.detach().item(),
+                          'contr_loss': loss_ctr.detach().item(), 'Total_loss': loss.detach().item()}
+
                 for key, val in losses.items():
                     avg_meter[key].update(val, 32)
 
@@ -559,7 +603,7 @@ class SFTSDA(Algorithm):
 
             tgt_last_fe = self.feature_extractor
             tgt_last_classifier = self.classifier_t
-            
+
             logger.debug(f'[Epoch : {epoch}/{self.hparams["num_epochs"]}]')
             for key, val in avg_meter.items():
                 logger.debug(f'{key}\t: {val.avg:2.4f}')
